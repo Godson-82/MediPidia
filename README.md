@@ -147,26 +147,6 @@ in your preferred browser.
 
 ---
 
-# 📸 Application Screenshots
-
-| Dashboard | Medipedia |
-|------------|-----------|
-| ![](<img width="1333" height="600" alt="Screenshot 2026-07-06 133314" src="https://github.com/user-attachments/assets/ba5d5298-6203-4cd1-9c33-536c6e2cc35d" />
-) | ![](<img width="221" height="79" alt="Screenshot 2026-07-06 235232" src="https://github.com/user-attachments/assets/92832b71-e0fc-40ac-808a-a30cbb1ba689" />
-) |
-
-| Pharmacy | Doctor Booking |
-|-----------|----------------|
-| ![](assets/screenshots/pharmacy.png) | ![](assets/screenshots/doctors.png) |
-
-| Health Records | Medication Reminder |
-|----------------|---------------------|
-| ![](assets/screenshots/health-records.png) | ![](assets/screenshots/reminders.png) |
-
-> 📌 Replace these images with your actual screenshots.
-
----
-
 # 📈 Project Statistics
 
 | Metric | Value |
