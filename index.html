@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediShelf — Your health, at a glance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ---------- THEME TOKENS ---------- */
+  :root[data-theme="light"]{
+    --ink:#152623;
+    --ink-soft:#3d534e;
+    --paper:#EDF1EE;
+    --paper-raised:#FFFFFF;
+    --line: rgba(15,61,62,0.10);
+    --line-strong: rgba(15,61,62,0.18);
+    --teal-deep:#0F3D3E;
+    --teal:#2F6F5E;
+    --teal-pale:#DCEAE4;
+    --amber:#E2872F;
+    --amber-deep:#C96A17;
+    --amber-pale:#FBE6CC;
+    --red:#C4483A;
+    --red-pale:#F6DEDA;
+    --glass-bg: rgba(255,255,255,0.55);
+    --glass-bg-strong: rgba(255,255,255,0.72);
+    --glass-border: rgba(255,255,255,0.65);
+    --glass-shadow: 0 8px 32px rgba(15,61,62,0.10), inset 0 1px 0 rgba(255,255,255,0.6);
+    --bg-1:#e8efe9;
+    --bg-2:#f7ecdd;
+    --bg-3:#dee9e5;
+    --blob-a:#a5d4c4;
+    --blob-b:#f2c98a;
+    --blob-c:#b7d8ce;
+  }
+  :root[data-theme="dark"]{
+    --ink:#e6edeb;
+    --ink-soft:#a3b8b2;
+    --paper:#0a1513;
+    --paper-raised:#0f1c1a;
+    --line: rgba(255,255,255,0.08);
+    --line-strong: rgba(255,255,255,0.14);
+    --teal-deep:#7ad0b8;
+    --teal:#5fb79f;
+    --teal-pale: rgba(122,208,184,0.14);
+    --amber:#f0a45a;
+    --amber-deep:#f7bd7f;
+    --amber-pale: rgba(240,164,90,0.18);
+    --red:#e97565;
+    --red-pale: rgba(233,117,101,0.15);
+    --glass-bg: rgba(20,34,32,0.55);
+    --glass-bg-strong: rgba(20,34,32,0.72);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.05);
+    --bg-1:#08120f;
+    --bg-2:#0f221d;
+    --bg-3:#0a1a18;
+    --blob-a:#1c5a4a;
+    --blob-b:#7a4a1c;
+    --blob-c:#164038;
+  }
+  :root{
+    --radius:16px;
+    --radius-lg:22px;
+    --shadow: 0 1px 2px rgba(15,61,62,0.06), 0 4px 16px rgba(15,61,62,0.06);
+    --ease: cubic-bezier(.22,.61,.36,1);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  html{ scroll-behavior:smooth; }
+  body{
+    color:var(--ink);
+    font-family:'IBM Plex Sans', sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at -10% -10%, var(--bg-2), transparent 55%),
+      radial-gradient(900px 700px at 110% 10%, var(--bg-3), transparent 60%),
+      radial-gradient(900px 900px at 50% 120%, var(--bg-2), transparent 55%),
+      var(--bg-1);
+    background-attachment: fixed;
+    transition: background-color .4s var(--ease), color .3s var(--ease);
+    overflow-x:hidden;
+  }
+  /* Animated ambient blobs */
+  .ambient{
+    position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none;
+  }
+  .blob{
+    position:absolute; width:520px; height:520px; border-radius:50%;
+    filter: blur(90px); opacity:.55;
+    animation: drift 22s ease-in-out infinite alternate;
+  }
+  .blob.a{ background:var(--blob-a); top:-140px; left:-120px; }
+  .blob.b{ background:var(--blob-b); top:30%; right:-180px; animation-duration:28s; }
+  .blob.c{ background:var(--blob-c); bottom:-160px; left:30%; animation-duration:26s; }
+  @keyframes drift{
+    0%   { transform: translate(0,0) scale(1); }
+    50%  { transform: translate(40px,-30px) scale(1.08); }
+    100% { transform: translate(-30px,40px) scale(.96); }
+  }
+  h1,h2,h3,.display{ font-family:'Fraunces', serif; letter-spacing:-0.01em; }
+  .mono{ font-family:'IBM Plex Mono', monospace; }
+  .app{
+    display:flex;
+    min-height:100vh;
+    max-width:1240px;
+    margin:0 auto;
+    padding:18px;
+    gap:18px;
+  }
+  /* ---------- GLASS SURFACE ---------- */
+  .glass{
+    background: var(--glass-bg);
+    backdrop-filter: blur(22px) saturate(160%);
+    -webkit-backdrop-filter: blur(22px) saturate(160%);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: var(--radius-lg);
+  }
+  /* ---------- SIDEBAR ---------- */
+  .sidebar{
+    width:232px;
+    flex-shrink:0;
+    padding:22px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    position:sticky; top:18px;
+    height: calc(100vh - 36px);
+  }
+  .brand{
+    display:flex; align-items:center; gap:10px;
+    padding:4px 10px 22px 10px;
+  }
+  .brand-mark{
+    width:34px; height:34px; border-radius:11px;
+    background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+    position:relative; flex-shrink:0;
+    box-shadow: 0 6px 18px color-mix(in oklab, var(--teal-deep) 35%, transparent);
+  }
+  .brand-mark::before, .brand-mark::after{
+    content:""; position:absolute; background:var(--amber-pale); border-radius:2px;
+  }
+  .brand-mark::before{ width:14px; height:3px; top:15.5px; left:10px; }
+  .brand-mark::after{ width:3px; height:14px; top:10px; left:15.5px; }
+  .brand-name{
+    font-family:'Fraunces', serif; font-weight:600; font-size:20px;
+    color:var(--teal-deep);
+  }
+  .nav-pill{
+    display:flex; align-items:center; gap:11px;
+    padding:11px 14px; border-radius:14px;
+    cursor:pointer;
+    font-size:14.5px; font-weight:500;
+    color:var(--ink-soft);
+    border:1px solid transparent;
+    transition: all .25s var(--ease);
+    position:relative;
+  }
+  .nav-pill:hover{
+    background: var(--glass-bg-strong);
+    color:var(--ink);
+    transform: translateX(2px);
+  }
+  .nav-pill.active{
+    background: linear-gradient(135deg, var(--teal-deep), color-mix(in oklab, var(--teal-deep) 70%, var(--teal)));
+    color:#fff;
+    box-shadow: 0 10px 24px color-mix(in oklab, var(--teal-deep) 30%, transparent);
+  }
+  :root[data-theme="dark"] .nav-pill.active{ color:#0a1513; }
+  .nav-pill .tag{
+    font-family:'IBM Plex Mono', monospace; font-size:10px;
+    color:var(--ink-soft); opacity:.75;
+    border:1px solid var(--line-strong); border-radius:6px;
+    padding:1px 6px; margin-left:auto;
+  }
+  .nav-pill.active .tag{ color:inherit; border-color: currentColor; opacity:.85; }
+  .nav-icon{ width:18px; height:18px; flex-shrink:0; }
+  .sidebar-foot{
+    margin-top:auto;
+    padding:14px 12px 6px;
+    font-size:11.5px; color:var(--ink-soft);
+    opacity:.75;
+    border-top:1px solid var(--line);
+  }
+  .theme-toggle{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 12px; border-radius:12px;
+    background: var(--glass-bg);
+    border: 1px solid var(--line);
+    margin: 10px 4px 4px;
+    cursor:pointer;
+    transition: all .25s var(--ease);
+  }
+  .theme-toggle:hover{ background: var(--glass-bg-strong); }
+  .theme-toggle .label{ font-size:12.5px; color:var(--ink-soft); font-weight:500; }
+  .switch{
+    width:38px; height:22px; border-radius:999px;
+    background: var(--line-strong);
+    position:relative; transition: background .25s var(--ease);
+  }
+  .switch::after{
+    content:""; position:absolute; top:2px; left:2px;
+    width:18px; height:18px; border-radius:50%;
+    background:#fff; box-shadow: 0 2px 6px rgba(0,0,0,.2);
+    transition: transform .3s var(--ease), background .25s var(--ease);
+  }
+  :root[data-theme="dark"] .switch{ background: var(--teal); }
+  :root[data-theme="dark"] .switch::after{ transform: translateX(16px); background:#0a1513; }
+  /* ---------- MAIN ---------- */
+  .main{
+    flex:1; min-width:0;
+    padding: 8px 6px 60px;
+  }
+  .section{ display:none; animation: fadeUp .4s var(--ease); }
+  .section.active{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(10px); }
+    to  { opacity:1; transform:none; }
+  }
+  .page-head{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    margin-bottom:22px; gap:20px; padding: 4px 6px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace; font-size:11px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:6px;
+  }
+  .page-title{ font-size:32px; font-weight:600; color:var(--teal-deep); margin:0; }
+  .page-sub{ font-size:14px; color:var(--ink-soft); margin-top:6px; max-width:560px; }
+  /* ---------- CARD (glass) ---------- */
+  .card{
+    background: var(--glass-bg);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    box-shadow: var(--glass-shadow);
+    transition: transform .3s var(--ease), box-shadow .3s var(--ease), border-color .3s var(--ease);
+  }
+  .card.hover:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 14px 40px rgba(15,61,62,.14), inset 0 1px 0 rgba(255,255,255,.65);
+    border-color: var(--line-strong);
+  }
+  input, select, textarea{
+    font-family:'IBM Plex Sans', sans-serif; font-size:14px;
+    border:1px solid var(--line-strong); border-radius:12px;
+    padding:10px 14px;
+    background: var(--glass-bg-strong);
+    color:var(--ink); outline:none;
+    transition: all .2s var(--ease);
+  }
+  input:focus, select:focus, textarea:focus{
+    border-color: var(--teal);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--teal) 22%, transparent);
+  }
+  label{ font-size:12.5px; font-weight:600; color:var(--ink-soft); display:block; margin-bottom:6px; }
+  ::placeholder{ color: color-mix(in oklab, var(--ink-soft) 60%, transparent); }
+  button{ font-family:'IBM Plex Sans', sans-serif; cursor:pointer; border:none; }
+  .btn{
+    padding:10px 18px; border-radius:999px;
+    font-size:13.5px; font-weight:600;
+    display:inline-flex; align-items:center; gap:7px;
+    transition: all .2s var(--ease);
+  }
+  .btn:active{ transform: scale(.97); }
+  .btn-primary{
+    background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+    color:#fff;
+    box-shadow: 0 8px 20px color-mix(in oklab, var(--teal-deep) 30%, transparent);
+  }
+  :root[data-theme="dark"] .btn-primary{ color:#0a1513; }
+  .btn-primary:hover{ transform: translateY(-1px); box-shadow: 0 12px 26px color-mix(in oklab, var(--teal-deep) 40%, transparent); }
+  .btn-amber{
+    background: linear-gradient(135deg, var(--amber), var(--amber-deep));
+    color:#fff;
+    box-shadow: 0 8px 20px color-mix(in oklab, var(--amber-deep) 30%, transparent);
+  }
+  :root[data-theme="dark"] .btn-amber{ color:#1a0f04; }
+  .btn-amber:hover{ transform: translateY(-1px); }
+  .btn-ghost{
+    background: var(--glass-bg);
+    color: var(--teal-deep);
+    border:1px solid var(--line-strong);
+    backdrop-filter: blur(10px);
+  }
+  .btn-ghost:hover{ border-color: var(--teal); background: var(--glass-bg-strong); }
+  .btn-sm{ padding:8px 14px; font-size:12.5px; }
+  .search-row{ display:flex; gap:10px; margin-bottom:20px; }
+  .search-row input{ flex:1; }
+  /* ---------- DASHBOARD ---------- */
+  .stats-grid{
+    display:grid; grid-template-columns: repeat(4, 1fr); gap:14px;
+    margin-bottom:22px;
+  }
+  .stat{
+    padding:16px 18px;
+    display:flex; flex-direction:column; gap:6px;
+    position:relative; overflow:hidden;
+  }
+  .stat .stat-icon{
+    width:36px; height:36px; border-radius:11px;
+    display:flex; align-items:center; justify-content:center;
+    background: var(--teal-pale); color: var(--teal-deep);
+    margin-bottom:4px;
+  }
+  .stat .stat-icon svg{ width:18px; height:18px; }
+  .stat.amber .stat-icon{ background: var(--amber-pale); color: var(--amber-deep); }
+  .stat.red   .stat-icon{ background: var(--red-pale); color: var(--red); }
+  .stat .stat-label{ font-size:11.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+  .stat .stat-value{ font-family:'Fraunces', serif; font-size:26px; font-weight:600; color:var(--teal-deep); }
+  .stat .stat-hint{ font-size:12px; color:var(--ink-soft); }
+  .dash-grid{
+    display:grid; grid-template-columns: 2fr 1fr; gap:18px;
+  }
+  .quick-actions{
+    display:grid; grid-template-columns: repeat(2, 1fr); gap:10px;
+    margin-top:14px;
+  }
+  .quick-action{
+    padding:14px; border-radius:14px;
+    background: var(--glass-bg-strong);
+    border:1px solid var(--line);
+    cursor:pointer; text-align:left;
+    display:flex; align-items:center; gap:12px;
+    transition: all .2s var(--ease);
+  }
+  .quick-action:hover{ transform: translateY(-2px); border-color: var(--teal); }
+  .quick-action .qa-icon{
+    width:36px; height:36px; border-radius:10px;
+    background: var(--teal-pale); color:var(--teal-deep);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .quick-action .qa-icon svg{ width:18px; height:18px; }
+  .quick-action .qa-title{ font-weight:600; font-size:13.5px; color:var(--ink); }
+  .quick-action .qa-sub{ font-size:11.5px; color:var(--ink-soft); }
+  /* Metric ring */
+  .metric-ring{
+    display:flex; align-items:center; gap:16px; padding:16px;
+    border-radius:14px; background: var(--glass-bg-strong);
+    border:1px solid var(--line);
+    margin-bottom:10px;
+  }
+  .ring{ position:relative; width:64px; height:64px; flex-shrink:0; }
+  .ring svg{ transform: rotate(-90deg); }
+  .ring .ring-bg{ stroke: var(--line-strong); }
+  .ring .ring-fg{ stroke: var(--teal); transition: stroke-dashoffset .8s var(--ease); }
+  .ring .ring-val{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces', serif; font-weight:600; font-size:14px; color:var(--teal-deep);
+  }
+  /* ---------- MEDIPEDIA ---------- */
+  .med-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(240px,1fr)); gap:14px; }
+  .med-tag{
+    padding:16px; cursor:pointer; position:relative;
+    border-left:5px solid var(--teal);
+    overflow:hidden;
+  }
+  .med-tag::before{
+    content:""; position:absolute; top:-40%; right:-40%;
+    width:180px; height:180px; border-radius:50%;
+    background: radial-gradient(circle, var(--teal-pale), transparent 70%);
+    opacity:0; transition: opacity .4s var(--ease);
+  }
+  .med-tag:hover{ border-left-color:var(--amber); transform: translateY(-3px); }
+  .med-tag:hover::before{ opacity:1; }
+  .med-tag > *{ position:relative; z-index:1; }
+  .med-tag .name{ font-family:'Fraunces',serif; font-weight:600; font-size:17px; color:var(--teal-deep); }
+  .med-tag .salt{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-soft); margin-top:4px; }
+  .med-tag .price{ font-size:13px; font-weight:600; margin-top:9px; color:var(--amber-deep); }
+  .detail-panel{ padding:26px; margin-top:4px; }
+  .detail-head{ display:flex; justify-content:space-between; align-items:flex-start; gap:16px; }
+  .detail-name{ font-size:26px; font-weight:600; color:var(--teal-deep); }
+  .detail-company{ font-size:13px; color:var(--ink-soft); margin-top:2px; }
+  .pill-label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.06em;
+    background:var(--teal-pale); color:var(--teal-deep);
+    padding:4px 10px; border-radius:8px;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+  .comp-strip{
+    font-family:'IBM Plex Mono',monospace; font-size:13px;
+    background: color-mix(in oklab, var(--ink) 92%, transparent);
+    color: var(--paper);
+    padding:12px 14px; border-radius:12px; margin:16px 0; letter-spacing:.02em;
+  }
+  :root[data-theme="dark"] .comp-strip{ background: rgba(255,255,255,0.06); color:var(--ink); border:1px solid var(--line-strong); }
+  .detail-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:18px; }
+  .detail-grid h4{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); margin:0 0 10px; font-family:'IBM Plex Mono',monospace; font-weight:600;}
+  .sub-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed var(--line-strong); font-size:13.5px; }
+  .sub-row:last-child{ border-bottom:none; }
+  .sub-row .comp-price{ font-family:'IBM Plex Mono',monospace; color:var(--amber-deep); font-weight:600; }
+  /* ---------- PHARMACY ---------- */
+  .rx-grid{ display:grid; grid-template-columns:2.1fr 1fr; gap:20px; align-items:flex-start; }
+  .rx-card{ padding:16px; display:flex; flex-direction:column; gap:8px; }
+  .rx-card .name{ font-weight:600; color:var(--teal-deep); font-size:15px; }
+  .rx-card .meta{ font-size:12px; color:var(--ink-soft); }
+  .rx-foot{ display:flex; justify-content:space-between; align-items:center; margin-top:6px; }
+  .rx-price{ font-family:'IBM Plex Mono',monospace; font-weight:600; }
+  .qty-stepper{ display:flex; align-items:center; gap:8px; border:1px solid var(--line-strong); border-radius:999px; padding:3px 4px; background:var(--glass-bg-strong); }
+  .qty-stepper button{ width:26px; height:26px; border-radius:50%; background:var(--teal-pale); font-weight:700; color:var(--teal-deep); transition: transform .15s var(--ease); }
+  .qty-stepper button:hover{ transform: scale(1.1); }
+  .cart-item{ display:flex; justify-content:space-between; font-size:13.5px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .cart-total{ display:flex; justify-content:space-between; font-weight:700; padding-top:12px; font-size:16px; color:var(--teal-deep); }
+  /* ---------- DOCTOR ---------- */
+  .doc-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(270px,1fr)); gap:16px; }
+  .doc-card{ padding:18px; }
+  .doc-top{ display:flex; gap:12px; align-items:center; position:relative; }
+  .avatar{
+    width:48px; height:48px; border-radius:50%;
+    background: linear-gradient(135deg, var(--teal-pale), color-mix(in oklab, var(--teal) 25%, transparent));
+    color:var(--teal-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Fraunces',serif; font-weight:700; font-size:17px;
+    flex-shrink:0; position:relative;
+    border:2px solid var(--glass-border);
+  }
+  .doc-name{ font-weight:600; font-size:15px; color:var(--ink); }
+  .doc-spec{ font-size:12px; color:var(--teal); font-weight:500; }
+  .doc-meta{ font-size:12px; color:var(--ink-soft); margin-top:10px; display:flex; justify-content:space-between; }
+  .doc-actions{ display:flex; gap:8px; margin-top:14px; }
+  .doc-actions .btn{ flex:1; justify-content:center; }
+  .spec-badge{
+    position:absolute; bottom:-3px; right:-3px;
+    width:20px; height:20px; border-radius:50%;
+    background: linear-gradient(135deg, var(--amber), var(--amber-deep));
+    border:2px solid var(--paper-raised);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .spec-badge svg{ width:11px; height:11px; color:#fff; }
+  .appt-list .card{ padding:14px 18px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+  /* ---------- HEALTH RECORD ---------- */
+  .hr-grid{ display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .hr-card{ padding:22px; }
+  .hr-card h3{ font-size:16px; margin:0 0 14px; color:var(--teal-deep); display:flex; align-items:center; gap:8px; }
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+  .chip{
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--red-pale); color:var(--red);
+    font-size:12px; font-weight:600;
+    padding:6px 12px; border-radius:999px; margin:0 6px 6px 0;
+    border:1px solid color-mix(in oklab, var(--red) 25%, transparent);
+  }
+  .chip.neutral{ background:var(--teal-pale); color:var(--teal-deep); border-color: color-mix(in oklab, var(--teal) 25%, transparent); }
+  .chip button{ background:none; color:inherit; font-weight:700; padding:0; line-height:1; font-size:15px; }
+  .med-history-row{ display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px dashed var(--line-strong); font-size:13px; }
+  /* Vitals log */
+  .vitals-grid{ display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; margin-top:10px; }
+  .vital-box{
+    padding:12px; border-radius:12px; background: var(--glass-bg-strong);
+    border:1px solid var(--line); text-align:center;
+  }
+  .vital-box .v-lab{ font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; }
+  .vital-box .v-val{ font-family:'Fraunces', serif; font-size:22px; font-weight:600; color:var(--teal-deep); margin-top:2px; }
+  .vital-box .v-unit{ font-size:11px; color:var(--ink-soft); }
+  /* ---------- REMINDERS ---------- */
+  .reminder{
+    display:flex; align-items:center; gap:12px;
+    padding:12px 14px; border-radius:14px;
+    background: var(--glass-bg-strong);
+    border:1px solid var(--line);
+    margin-bottom:8px;
+    transition: all .2s var(--ease);
+  }
+  .reminder:hover{ border-color: var(--teal); transform: translateX(3px); }
+  .reminder.done{ opacity:.55; }
+  .reminder.done .r-name{ text-decoration: line-through; }
+  .r-check{
+    width:22px; height:22px; border-radius:50%;
+    border:2px solid var(--line-strong);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; flex-shrink:0;
+    transition: all .2s var(--ease);
+  }
+  .r-check.checked{ background: var(--teal); border-color: var(--teal); }
+  .r-check.checked::after{
+    content:""; width:7px; height:11px;
+    border:solid #fff; border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translateY(-1px);
+  }
+  .r-body{ flex:1; }
+  .r-name{ font-weight:600; font-size:13.5px; color:var(--ink); }
+  .r-time{ font-size:11.5px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; margin-top:2px; }
+  /* ---------- NOTIFICATIONS ---------- */
+  .notif-btn{
+    position:relative; width:40px; height:40px; border-radius:50%;
+    background: var(--glass-bg-strong); border:1px solid var(--line-strong);
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; transition: all .2s var(--ease);
+    backdrop-filter: blur(12px);
+  }
+  .notif-btn:hover{ transform: translateY(-1px); border-color: var(--teal); }
+  .notif-btn svg{ width:18px; height:18px; color: var(--ink-soft); }
+  .notif-dot{
+    position:absolute; top:8px; right:9px;
+    width:8px; height:8px; border-radius:50%;
+    background: var(--amber);
+    box-shadow: 0 0 0 3px var(--glass-bg-strong);
+  }
+  .notif-panel{
+    position:absolute; top:52px; right:0;
+    width:320px; padding:14px;
+    z-index:40;
+    opacity:0; transform: translateY(-8px) scale(.98);
+    pointer-events:none;
+    transition: all .25s var(--ease);
+  }
+  .notif-panel.open{ opacity:1; transform:none; pointer-events:auto; }
+  .notif-item{
+    padding:10px 12px; border-radius:12px;
+    background: var(--glass-bg-strong);
+    border:1px solid var(--line);
+    margin-bottom:8px;
+    font-size:12.5px;
+  }
+  .notif-item .n-title{ font-weight:600; color:var(--ink); }
+  .notif-item .n-time{ font-size:11px; color:var(--ink-soft); font-family:'IBM Plex Mono', monospace; margin-top:3px; }
+  .header-bar{
+    display:flex; justify-content:flex-end; align-items:center; gap:10px;
+    padding: 0 6px 14px;
+    position:relative;
+  }
+  /* ---------- TOAST ---------- */
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px);
+    background: linear-gradient(135deg, var(--teal-deep), var(--teal));
+    color:#fff; padding:12px 22px; border-radius:999px;
+    font-size:13.5px; font-weight:500;
+    box-shadow: 0 12px 30px rgba(15,61,62,.35);
+    backdrop-filter: blur(12px);
+    opacity:0; pointer-events:none;
+    transition: opacity .3s var(--ease), transform .3s var(--ease);
+    z-index:60;
+  }
+  :root[data-theme="dark"] .toast{ color:#0a1513; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .empty-illustration{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:26px 14px; text-align:center; color:var(--ink-soft);
+  }
+  .empty-illustration svg{ width:52px; height:52px; color:var(--teal); opacity:.55; }
+  .empty-illustration span{ font-size:12.5px; }
+  .empty-illustration.small svg{ width:38px; height:38px; }
+  .empty-illustration.small{ padding:16px 10px; }
+  .cat-icon{ width:13px; height:13px; flex-shrink:0; }
+  /* ---------- RESPONSIVE ---------- */
+  @media (max-width: 960px){
+    .stats-grid{ grid-template-columns: repeat(2, 1fr); }
+    .dash-grid, .rx-grid, .detail-grid, .hr-grid{ grid-template-columns:1fr; }
+  }
+  @media (max-width: 820px){
+    .app{ flex-direction:column; padding:10px; gap:10px; }
+    .sidebar{ width:100%; position:relative; height:auto;
+      flex-direction:row; overflow-x:auto; padding:12px; }
+    .brand{ padding:0 12px 0 0; }
+    .sidebar-foot, .theme-toggle{ display:none; }
+    .theme-toggle.mobile{ display:flex; margin-left:auto; }
+    .nav-pill{ white-space:nowrap; flex-shrink:0; }
+    .main{ padding: 4px 4px 60px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:0.001ms !important; transition-duration:0.001ms !important; }
+  }
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true">
+  <div class="blob a"></div>
+  <div class="blob b"></div>
+  <div class="blob c"></div>
+</div>
+<div class="app">
+  <nav class="sidebar glass">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">MediShelf</div>
+    </div>
+    <div class="nav-pill active" data-section="dashboard" onclick="showSection('dashboard')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Dashboard <span class="tag">new</span>
+    </div>
+    <div class="nav-pill" data-section="medipedia" onclick="showSection('medipedia')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.2c2.4-1 5-1.3 8-.4v14c-3-.9-5.6-.6-8 .4V5.2Z"/><path d="M20 5.2c-2.4-1-5-1.3-8-.4v14c3-.9 5.6-.6 8 .4V5.2Z"/></svg>
+      Medipedia <span class="tag">i</span>
+    </div>
+    <div class="nav-pill" data-section="pharmacy" onclick="showSection('pharmacy')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1.6 9.4a2 2 0 0 1-2 1.6H6.6a2 2 0 0 1-2-1.6L3 9Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/><path d="M9 13.2h6"/></svg>
+      Pharmacy <span class="tag" id="cart-count-tag">0</span>
+    </div>
+    <div class="nav-pill" data-section="doctor" onclick="showSection('doctor')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><path d="M6 4H4.5M14 4h1.5"/><path d="M14 10.5V13a5 5 0 0 1-10 0v-1"/><circle cx="18" cy="13.5" r="2.3"/></svg>
+      Doctor <span class="tag">Rx</span>
+    </div>
+    <div class="nav-pill" data-section="reminders" onclick="showSection('reminders')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/><path d="M9 3h6"/></svg>
+      Reminders <span class="tag" id="rem-count-tag">0</span>
+    </div>
+    <div class="nav-pill" data-section="health" onclick="showSection('health')">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a2 2 0 0 1 2-2h9l5 5v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6Z"/><path d="M4.5 13h3.5l1.5-3 2 5 1.5-2.5H17"/></svg>
+      Health Record <span class="tag">+</span>
+    </div>
+    <div class="theme-toggle" onclick="toggleTheme()">
+      <span class="label" id="theme-label">Light mode</span>
+      <div class="switch"></div>
+    </div>
+    <div class="sidebar-foot">Reference prices &amp; demo data only. Not a real pharmacy.</div>
+  </nav>
+  <main class="main">
+    <div class="header-bar">
+      <div style="position:relative;">
+        <button class="notif-btn" onclick="toggleNotif(event)" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg>
+          <span class="notif-dot" id="notif-dot"></span>
+        </button>
+        <div class="notif-panel glass" id="notif-panel">
+          <div style="font-family:'Fraunces',serif; font-weight:600; font-size:14px; color:var(--teal-deep); margin-bottom:10px;">Notifications</div>
+          <div id="notif-list"></div>
+        </div>
+      </div>
+    </div>
+    <!-- ================= DASHBOARD ================= -->
+    <section class="section active" id="section-dashboard">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Welcome back</div>
+          <h1 class="page-title" id="greet-name">Your health, at a glance</h1>
+          <p class="page-sub">A calm overview of your medicines, appointments, and vitals — all in one place.</p>
+        </div>
+      </div>
+      <div class="stats-grid">
+        <div class="card stat hover">
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><line x1="10.5" y1="7.5" x2="15" y2="18.5"/></svg></div>
+          <div class="stat-label">Active meds</div>
+          <div class="stat-value" id="stat-meds">0</div>
+          <div class="stat-hint">In your record</div>
+        </div>
+        <div class="card stat amber hover">
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1.6 9.4a2 2 0 0 1-2 1.6H6.6a2 2 0 0 1-2-1.6L3 9Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg></div>
+          <div class="stat-label">Orders placed</div>
+          <div class="stat-value" id="stat-orders">0</div>
+          <div class="stat-hint">All time</div>
+        </div>
+        <div class="card stat hover">
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg></div>
+          <div class="stat-label">Appointments</div>
+          <div class="stat-value" id="stat-appts">0</div>
+          <div class="stat-hint">Upcoming</div>
+        </div>
+        <div class="card stat red hover">
+          <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.5-9C.7 7.2 3 4 6.5 4 9 4 11 6 12 7.5 13 6 15 4 17.5 4 21 4 23.3 7.2 21.5 11 19 15.6 12 20 12 20Z"/></svg></div>
+          <div class="stat-label">Wellness score</div>
+          <div class="stat-value" id="stat-score">—</div>
+          <div class="stat-hint">Based on your data</div>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <div class="card" style="padding:22px;">
+          <h3 style="margin:0 0 4px; font-family:'Fraunces',serif; font-size:18px; color:var(--teal-deep);">Today's vitals</h3>
+          <p style="font-size:12.5px; color:var(--ink-soft); margin:0 0 14px;">Log your key numbers to track trends.</p>
+          <div class="vitals-grid">
+            <div class="vital-box">
+              <div class="v-lab">Blood pressure</div>
+              <div class="v-val" id="v-bp">—</div>
+              <div class="v-unit">mmHg</div>
+            </div>
+            <div class="vital-box">
+              <div class="v-lab">Blood sugar</div>
+              <div class="v-val" id="v-sugar">—</div>
+              <div class="v-unit">mg/dL</div>
+            </div>
+            <div class="vital-box">
+              <div class="v-lab">Heart rate</div>
+              <div class="v-val" id="v-hr">—</div>
+              <div class="v-unit">bpm</div>
+            </div>
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:8px; margin-top:14px;">
+            <input id="i-bp" type="text" placeholder="120/80">
+            <input id="i-sugar" type="number" placeholder="95">
+            <input id="i-hr" type="number" placeholder="72">
+            <button class="btn btn-primary btn-sm" onclick="saveVitals()">Log</button>
+          </div>
+          <h3 style="margin:22px 0 4px; font-family:'Fraunces',serif; font-size:18px; color:var(--teal-deep);">Quick actions</h3>
+          <div class="quick-actions">
+            <button class="quick-action" onclick="showSection('pharmacy')">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1.6 9.4a2 2 0 0 1-2 1.6H6.6a2 2 0 0 1-2-1.6L3 9Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg></div>
+              <div><div class="qa-title">Order medicine</div><div class="qa-sub">Refill your regulars</div></div>
+            </button>
+            <button class="quick-action" onclick="showSection('doctor')">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg></div>
+              <div><div class="qa-title">Book a doctor</div><div class="qa-sub">Chat, video, or visit</div></div>
+            </button>
+            <button class="quick-action" onclick="showSection('reminders'); addQuickReminder();">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2"/></svg></div>
+              <div><div class="qa-title">Add reminder</div><div class="qa-sub">Never miss a dose</div></div>
+            </button>
+            <button class="quick-action" onclick="showSection('medipedia')">
+              <div class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg></div>
+              <div><div class="qa-title">Look up a medicine</div><div class="qa-sub">Salt, price, alternatives</div></div>
+            </button>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="padding:22px; margin-bottom:14px;">
+            <h3 style="margin:0 0 14px; font-family:'Fraunces',serif; font-size:18px; color:var(--teal-deep);">Adherence</h3>
+            <div class="metric-ring">
+              <div class="ring">
+                <svg width="64" height="64" viewBox="0 0 64 64">
+                  <circle class="ring-bg" cx="32" cy="32" r="26" fill="none" stroke-width="6"/>
+                  <circle class="ring-fg" id="ring-fg" cx="32" cy="32" r="26" fill="none" stroke-width="6"
+                          stroke-dasharray="163.36" stroke-dashoffset="163.36" stroke-linecap="round"/>
+                </svg>
+                <div class="ring-val" id="ring-val">0%</div>
+              </div>
+              <div>
+                <div style="font-weight:600; font-size:13.5px; color:var(--ink);">Today's doses</div>
+                <div style="font-size:12px; color:var(--ink-soft); margin-top:3px;" id="ring-sub">No reminders set yet</div>
+              </div>
+            </div>
+          </div>
+          <div class="card" style="padding:22px;">
+            <h3 style="margin:0 0 12px; font-family:'Fraunces',serif; font-size:18px; color:var(--teal-deep);">Recent activity</h3>
+            <div id="recent-activity"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- ================= MEDIPEDIA ================= -->
+    <section class="section" id="section-medipedia">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Medicine encyclopedia</div>
+          <h1 class="page-title">Medipedia</h1>
+          <p class="page-sub">Look up any medicine for salt composition, brand substitutes, generic alternatives, and prices.</p>
+        </div>
+      </div>
+      <div class="search-row">
+        <input id="medipedia-search" type="text" placeholder="Search by medicine name, salt, or condition..." oninput="renderMedipedia()">
+        <button class="btn btn-primary" onclick="renderMedipedia()">Search</button>
+      </div>
+      <div id="medipedia-detail"></div>
+      <h3 style="font-size:12px; color:var(--ink-soft); margin:22px 0 12px; font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.08em;">All medicines</h3>
+      <div class="med-grid" id="medipedia-grid"></div>
+    </section>
+    <!-- ================= PHARMACY ================= -->
+    <section class="section" id="section-pharmacy">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Order medicines</div>
+          <h1 class="page-title">Pharmacy</h1>
+          <p class="page-sub">Add medicines to your cart and place an order for home delivery.</p>
+        </div>
+      </div>
+      <div class="search-row">
+        <input id="pharmacy-search" type="text" placeholder="Search medicines to order..." oninput="renderPharmacy()">
+      </div>
+      <div class="rx-grid">
+        <div class="med-grid" id="pharmacy-grid"></div>
+        <div class="card" style="padding:20px; position:sticky; top:20px;">
+          <h3 style="margin:0 0 4px; font-family:'Fraunces',serif; font-size:17px; color:var(--teal-deep);">Your cart</h3>
+          <div id="cart-items"></div>
+          <div id="cart-empty" class="empty-illustration small" style="display:none;">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14h32l-2.8 14.4a2.4 2.4 0 0 1-2.4 2H13.2a2.4 2.4 0 0 1-2.4-2L8 14Z"/><path d="M15 14c0-4.2 2.7-7.2 9-7.2s9 3 9 7.2"/></svg>
+            <span>Your cart is empty. Add a medicine to get started.</span>
+          </div>
+          <div class="cart-total" id="cart-total-row" style="display:none;">
+            <span>Total</span><span id="cart-total-amount"></span>
+          </div>
+          <button class="btn btn-amber" style="width:100%; margin-top:14px; justify-content:center;" onclick="placeOrder()">Place order</button>
+          <h4 style="font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); margin:22px 0 8px; font-family:'IBM Plex Mono',monospace;">Order history</h4>
+          <div id="order-history"></div>
+        </div>
+      </div>
+    </section>
+    <!-- ================= DOCTOR ================= -->
+    <section class="section" id="section-doctor">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Consultations</div>
+          <h1 class="page-title">Doctor</h1>
+          <p class="page-sub">Book an appointment, or start a chat / video consult for a flat service fee.</p>
+        </div>
+      </div>
+      <div class="doc-grid" id="doctor-grid"></div>
+      <h3 style="font-size:11px; color:var(--ink-soft); margin:26px 0 12px; font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.08em;">Your appointments</h3>
+      <div class="appt-list" id="appt-list"></div>
+    </section>
+    <!-- ================= REMINDERS ================= -->
+    <section class="section" id="section-reminders">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Never miss a dose</div>
+          <h1 class="page-title">Medication reminders</h1>
+          <p class="page-sub">Add your daily doses and check them off as you take them.</p>
+        </div>
+      </div>
+      <div class="card" style="padding:20px; margin-bottom:20px;">
+        <div style="display:grid; grid-template-columns: 2fr 1fr auto; gap:10px;">
+          <input id="rem-name" type="text" placeholder="Medicine (e.g. Metformin 500mg)">
+          <input id="rem-time" type="time" value="08:00">
+          <button class="btn btn-primary" onclick="addReminder()">Add reminder</button>
+        </div>
+      </div>
+      <div id="reminders-list"></div>
+    </section>
+    <!-- ================= HEALTH RECORD ================= -->
+    <section class="section" id="section-health">
+      <div class="page-head">
+        <div>
+          <div class="eyebrow">Your medical file</div>
+          <h1 class="page-title">Health Record</h1>
+          <p class="page-sub">Keep your profile, allergies, conditions and medicine history in one place.</p>
+        </div>
+      </div>
+      <div class="hr-grid">
+        <div class="card hr-card">
+          <h3><svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg>Profile</h3>
+          <div class="field-row">
+            <div><label for="hp-name">Full name</label><input id="hp-name" type="text" placeholder="Jordan Rao"></div>
+            <div><label for="hp-age">Age</label><input id="hp-age" type="number" placeholder="29"></div>
+          </div>
+          <div class="field-row">
+            <div>
+              <label for="hp-blood">Blood group</label>
+              <select id="hp-blood">
+                <option value="">Select</option>
+                <option>O+</option><option>O-</option><option>A+</option><option>A-</option>
+                <option>B+</option><option>B-</option><option>AB+</option><option>AB-</option>
+              </select>
+            </div>
+            <div><label for="hp-weight">Weight (kg)</label><input id="hp-weight" type="number" placeholder="68"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveProfile()">Save profile</button>
+          <div id="profile-saved-view" style="margin-top:14px;"></div>
+        </div>
+        <div class="card hr-card">
+          <h3><svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>Allergies &amp; conditions</h3>
+          <label for="hp-allergy-input">Add an allergy</label>
+          <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <input id="hp-allergy-input" type="text" placeholder="e.g. Penicillin" style="flex:1;">
+            <button class="btn btn-ghost btn-sm" onclick="addAllergy()">Add</button>
+          </div>
+          <div id="allergy-chips" style="margin-bottom:16px;"></div>
+          <label for="hp-condition-input">Add a chronic condition</label>
+          <div style="display:flex; gap:8px; margin-bottom:14px;">
+            <input id="hp-condition-input" type="text" placeholder="e.g. Type 2 diabetes" style="flex:1;">
+            <button class="btn btn-ghost btn-sm" onclick="addCondition()">Add</button>
+          </div>
+          <div id="condition-chips"></div>
+        </div>
+        <div class="card hr-card" style="grid-column:1 / -1;">
+          <h3><svg style="width:18px; height:18px;" viewBox="0 0 24 24" fill="none" stroke="var(--amber-deep)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><line x1="10.5" y1="7.5" x2="15" y2="18.5"/></svg>Medicine record</h3>
+          <p style="font-size:12.5px; color:var(--ink-soft); margin-top:-8px;">Medicines you order from Pharmacy are logged here automatically. You can also add one manually.</p>
+          <div style="display:flex; gap:8px; margin:12px 0 14px; flex-wrap:wrap;">
+            <input id="hp-med-name" type="text" placeholder="Medicine name" style="flex:2; min-width:140px;">
+            <input id="hp-med-note" type="text" placeholder="Note (dosage, prescribed by...)" style="flex:3; min-width:180px;">
+            <button class="btn btn-ghost btn-sm" onclick="addMedRecord()">Add</button>
+          </div>
+          <div id="med-history-list"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+/* ============================================================
+   DATA
+   ============================================================ */
+const MEDICINES = [
+  { id:"m1", name:"Paracip 650", generic:"Paracetamol 650mg", company:"Cipla", salt:"Paracetamol (650mg)", category:"Pain relief / Fever", price:28,
+    description:"Used for mild to moderate pain and fever reduction.",
+    substitutes:[ {name:"Dolo 650", company:"Micro Labs", price:30}, {name:"Calpol 650", company:"GSK", price:33}, {name:"Crocin 650", company:"GSK", price:29} ],
+    genericAlt:{name:"Paracetamol 650mg (Generic)", price:9} },
+  { id:"m2", name:"Azithral 500", generic:"Azithromycin 500mg", company:"Alembic", salt:"Azithromycin (500mg)", category:"Antibiotic", price:78,
+    description:"Broad spectrum antibiotic for bacterial infections of the respiratory tract, skin and ear.",
+    substitutes:[ {name:"Azee 500", company:"Cipla", price:82}, {name:"Zithrocin 500", company:"FDC", price:75}, {name:"Azithral-XL", company:"Alembic", price:120} ],
+    genericAlt:{name:"Azithromycin 500mg (Generic)", price:31} },
+  { id:"m3", name:"Metfor 500", generic:"Metformin 500mg", company:"Sun Pharma", salt:"Metformin Hydrochloride (500mg)", category:"Diabetes", price:35,
+    description:"First-line oral medicine for managing blood sugar in type 2 diabetes.",
+    substitutes:[ {name:"Glycomet 500", company:"USV", price:32}, {name:"Glyciphage 500", company:"Franco-Indian", price:34}, {name:"Obimet 500", company:"Emcure", price:36} ],
+    genericAlt:{name:"Metformin 500mg (Generic)", price:14} },
+  { id:"m4", name:"Atorva 10", generic:"Atorvastatin 10mg", company:"Zydus", salt:"Atorvastatin Calcium (10mg)", category:"Cholesterol", price:66,
+    description:"Statin used to lower LDL cholesterol and reduce cardiovascular risk.",
+    substitutes:[ {name:"Storvas 10", company:"Sun Pharma", price:70}, {name:"Atorlip 10", company:"Cipla", price:64}, {name:"Tonact 10", company:"Lupin", price:68} ],
+    genericAlt:{name:"Atorvastatin 10mg (Generic)", price:22} },
+  { id:"m5", name:"Pantocid 40", generic:"Pantoprazole 40mg", company:"Sun Pharma", salt:"Pantoprazole Sodium (40mg)", category:"Acidity / GERD", price:88,
+    description:"Proton pump inhibitor for acid reflux, gastritis and ulcers.",
+    substitutes:[ {name:"Pan 40", company:"Alkem", price:84}, {name:"Pantop 40", company:"Aristo", price:90}, {name:"Pantodac 40", company:"Zydus", price:86} ],
+    genericAlt:{name:"Pantoprazole 40mg (Generic)", price:29} },
+  { id:"m6", name:"Augmentin 625", generic:"Amoxicillin + Clavulanic Acid", company:"GSK", salt:"Amoxicillin (500mg) + Clavulanic Acid (125mg)", category:"Antibiotic", price:198,
+    description:"Combination antibiotic for tougher bacterial infections resistant to plain amoxicillin.",
+    substitutes:[ {name:"Clavam 625", company:"Alkem", price:170}, {name:"Moxikind-CV 625", company:"Mankind", price:165}, {name:"Fightox 625", company:"Alembic", price:160} ],
+    genericAlt:{name:"Amoxicillin+Clavulanate 625mg (Generic)", price:68} },
+  { id:"m7", name:"Telma 40", generic:"Telmisartan 40mg", company:"Glenmark", salt:"Telmisartan (40mg)", category:"Blood pressure", price:112,
+    description:"Angiotensin receptor blocker (ARB) used to treat high blood pressure.",
+    substitutes:[ {name:"Telista 40", company:"Mankind", price:105}, {name:"Cresar 40", company:"Torrent", price:108}, {name:"Telsartan 40", company:"IPCA", price:98} ],
+    genericAlt:{name:"Telmisartan 40mg (Generic)", price:38} },
+  { id:"m8", name:"Montair LC", generic:"Montelukast + Levocetirizine", company:"Cipla", salt:"Montelukast (10mg) + Levocetirizine (5mg)", category:"Allergy / Asthma", price:145,
+    description:"Combination therapy for allergic rhinitis and asthma-related symptoms.",
+    substitutes:[ {name:"Ozon-LC", company:"Alkem", price:130}, {name:"Levomont", company:"Mankind", price:125}, {name:"Montek LC", company:"Sun Pharma", price:138} ],
+    genericAlt:{name:"Montelukast+Levocetirizine (Generic)", price:47} },
+  { id:"m9", name:"Ecosprin 75", generic:"Aspirin 75mg", company:"USV", salt:"Aspirin (75mg)", category:"Cardiac / Blood thinner", price:18,
+    description:"Low-dose aspirin used for cardiovascular protection and blood clot prevention.",
+    substitutes:[ {name:"Delisprin 75", company:"Torrent", price:16}, {name:"Aspispan 75", company:"Panacea Biotec", price:15}, {name:"Loprin 75", company:"IPCA", price:17} ],
+    genericAlt:{name:"Aspirin 75mg (Generic)", price:6} },
+  { id:"m10", name:"Thyronorm 50", generic:"Levothyroxine 50mcg", company:"Abbott", salt:"Levothyroxine Sodium (50mcg)", category:"Thyroid", price:112,
+    description:"Hormone replacement for underactive thyroid (hypothyroidism).",
+    substitutes:[ {name:"Eltroxin 50", company:"GSK", price:108}, {name:"Thyrox 50", company:"Macleods", price:95}, {name:"Lethyrox 50", company:"Zydus", price:98} ],
+    genericAlt:{name:"Levothyroxine 50mcg (Generic)", price:35} },
+  { id:"m11", name:"Cetzine", generic:"Cetirizine 10mg", company:"GSK", salt:"Cetirizine Hydrochloride (10mg)", category:"Allergy", price:20,
+    description:"Antihistamine for allergic reactions, hay fever and hives.",
+    substitutes:[ {name:"Alerid", company:"Cipla", price:18}, {name:"Okacet", company:"Cipla", price:19}, {name:"Zyrtec", company:"Dr Reddy's", price:24} ],
+    genericAlt:{name:"Cetirizine 10mg (Generic)", price:7} },
+  { id:"m12", name:"Shelcal 500", generic:"Calcium Carbonate + Vitamin D3", company:"Torrent", salt:"Calcium Carbonate (500mg) + Vitamin D3 (250 IU)", category:"Supplement", price:135,
+    description:"Calcium and vitamin D supplement for bone health.",
+    substitutes:[ {name:"Calcimax D3", company:"Emcure", price:120}, {name:"Zerodol Cal", company:"IPCA", price:110}, {name:"Ostocalcium", company:"Franco-Indian", price:125} ],
+    genericAlt:{name:"Calcium+D3 (Generic)", price:48} },
+];
+const DOCTORS = [
+  { id:"d1", name:"Dr. Ananya Sen", spec:"General Physician", exp:"12 yrs", fee:299, rating:4.8, initial:"AS" },
+  { id:"d2", name:"Dr. Rohan Kapoor", spec:"Cardiologist", exp:"18 yrs", fee:599, rating:4.9, initial:"RK" },
+  { id:"d3", name:"Dr. Meera Iyer", spec:"Dermatologist", exp:"9 yrs", fee:399, rating:4.7, initial:"MI" },
+  { id:"d4", name:"Dr. Farhan Ali", spec:"Pediatrician", exp:"14 yrs", fee:349, rating:4.8, initial:"FA" },
+  { id:"d5", name:"Dr. Priya Nair", spec:"Endocrinologist", exp:"11 yrs", fee:499, rating:4.6, initial:"PN" },
+  { id:"d6", name:"Dr. Vikram Rathi", spec:"Orthopedic", exp:"16 yrs", fee:449, rating:4.7, initial:"VR" },
+];
+const ICON = {
+  pill: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><line x1="10.5" y1="7.5" x2="15" y2="18.5"/></svg>`,
+  shield: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/></svg>`,
+  droplet: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6 7 6 11.5a6 6 0 0 1-12 0C6 10 12 3 12 3Z"/></svg>`,
+  heart: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.4-9.5-9C.7 7.2 3 4 6.5 4 9 4 11 6 12 7.5 13 6 15 4 17.5 4 21 4 23.3 7.2 21.5 11 19 15.6 12 20 12 20Z"/></svg>`,
+  flame: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.4-1.8-1-2.5.6 2-1 3-2 3-1.5 0-1.3-1.7-1.5-3C13.2 5.5 12 3 12 3Z"/></svg>`,
+  wind: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h11a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3 13h15a2.5 2.5 0 1 1-2.5 2.5"/></svg>`,
+  leaf: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c0 9-5 15-14 15H4v-2C4 9 10 4 20 4Z"/></svg>`,
+  activity: `<svg class="cat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2.5-8 4 16 2.5-8H21"/></svg>`,
+};
+const SPEC_ICON = {
+  "General Physician": ICON.activity,
+  "Cardiologist": ICON.heart,
+  "Dermatologist": ICON.leaf,
+  "Pediatrician": ICON.droplet,
+  "Endocrinologist": ICON.droplet,
+  "Orthopedic": ICON.shield,
+};
+function categoryIcon(category){
+  const c = category.toLowerCase();
+  if(c.includes('pain') || c.includes('fever')) return ICON.pill;
+  if(c.includes('antibiotic')) return ICON.shield;
+  if(c.includes('diabetes')) return ICON.droplet;
+  if(c.includes('cholesterol') || c.includes('cardiac') || c.includes('blood pressure')) return ICON.heart;
+  if(c.includes('acidity') || c.includes('gerd')) return ICON.flame;
+  if(c.includes('allergy') || c.includes('asthma')) return ICON.wind;
+  if(c.includes('thyroid')) return ICON.activity;
+  if(c.includes('supplement')) return ICON.leaf;
+  return ICON.pill;
+}
+const EMPTY_ART = `<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="18" width="32" height="22" rx="4"/><path d="M8 26h32"/><path d="M17 18v-4a7 7 0 0 1 14 0v4"/></svg>`;
+/* ============================================================
+   STATE
+   ============================================================ */
+let cart = {};
+let orders = [];
+let appointments = [];
+let profile = {};
+let allergies = [];
+let conditions = [];
+let medHistory = [];
+let reminders = [];
+let vitals = { bp:"", sugar:"", hr:"" };
+let notifications = [];
+let theme = 'light';
+const STORAGE_KEY = 'medishelf:state:v2';
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=> t.classList.remove('show'), 2200);
+}
+function loadState(){
+  try{
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const s = JSON.parse(raw);
+      cart = s.cart || {};
+      orders = s.orders || [];
+      appointments = s.appointments || [];
+      profile = s.profile || {};
+      allergies = s.allergies || [];
+      conditions = s.conditions || [];
+      medHistory = s.medHistory || [];
+      reminders = s.reminders || [];
+      vitals = s.vitals || { bp:"", sugar:"", hr:"" };
+      notifications = s.notifications || [];
+      theme = s.theme || 'light';
+    }
+  }catch(e){ console.warn(e); }
+  applyTheme();
+  renderAll();
+}
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      cart, orders, appointments, profile, allergies, conditions, medHistory,
+      reminders, vitals, notifications, theme
+    }));
+  }catch(e){ console.error(e); }
+}
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', theme);
+  const lbl = document.getElementById('theme-label');
+  if(lbl) lbl.textContent = theme === 'dark' ? 'Dark mode' : 'Light mode';
+}
+function toggleTheme(){
+  theme = theme === 'dark' ? 'light' : 'dark';
+  applyTheme(); saveState();
+}
+/* ============================================================
+   NOTIFICATIONS
+   ============================================================ */
+function pushNotif(title){
+  notifications.unshift({ title, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
+  notifications = notifications.slice(0, 8);
+  saveState(); renderNotif();
+}
+function renderNotif(){
+  const list = document.getElementById('notif-list');
+  const dot = document.getElementById('notif-dot');
+  if(!notifications.length){
+    list.innerHTML = `<div class="empty-illustration small">${EMPTY_ART}<span>You're all caught up.</span></div>`;
+    dot.style.display = 'none';
+    return;
+  }
+  dot.style.display = 'block';
+  list.innerHTML = notifications.map(n =>
+    `<div class="notif-item"><div class="n-title">${n.title}</div><div class="n-time">${n.time}</div></div>`
+  ).join('');
+}
+function toggleNotif(e){
+  e.stopPropagation();
+  document.getElementById('notif-panel').classList.toggle('open');
+}
+document.addEventListener('click', (e)=>{
+  const p = document.getElementById('notif-panel');
+  if(p && !p.contains(e.target)) p.classList.remove('open');
+});
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function showSection(name){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-pill').forEach(p=>p.classList.remove('active'));
+  const sec = document.getElementById('section-'+name);
+  if(sec) sec.classList.add('active');
+  const pill = document.querySelector('.nav-pill[data-section="'+name+'"]');
+  if(pill) pill.classList.add('active');
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard(){
+  document.getElementById('stat-meds').textContent = medHistory.length;
+  document.getElementById('stat-orders').textContent = orders.length;
+  document.getElementById('stat-appts').textContent = appointments.length;
+  // wellness score: mix of profile completion + logged vitals + adherence
+  let score = 0;
+  if(profile.name) score += 20;
+  if(profile.blood) score += 10;
+  if(vitals.bp) score += 15;
+  if(vitals.sugar) score += 15;
+  if(vitals.hr) score += 10;
+  const doneToday = reminders.filter(r=>r.done).length;
+  if(reminders.length) score += Math.round((doneToday / reminders.length) * 30);
+  document.getElementById('stat-score').textContent = score ? score + '/100' : '—';
+  document.getElementById('greet-name').textContent =
+    profile.name ? `Hello, ${profile.name.split(' ')[0]}` : 'Your health, at a glance';
+  document.getElementById('v-bp').textContent = vitals.bp || '—';
+  document.getElementById('v-sugar').textContent = vitals.sugar || '—';
+  document.getElementById('v-hr').textContent = vitals.hr || '—';
+  // adherence ring
+  const pct = reminders.length ? Math.round((doneToday / reminders.length) * 100) : 0;
+  const circ = 2 * Math.PI * 26;
+  const ring = document.getElementById('ring-fg');
+  ring.setAttribute('stroke-dasharray', circ);
+  ring.setAttribute('stroke-dashoffset', circ - (circ * pct / 100));
+  document.getElementById('ring-val').textContent = pct + '%';
+  document.getElementById('ring-sub').textContent = reminders.length
+    ? `${doneToday} of ${reminders.length} doses taken`
+    : 'No reminders set yet';
+  // recent activity
+  const activities = [];
+  orders.slice(0, 2).forEach(o => activities.push({ title:`Order ${o.id} placed`, meta:`₹${o.total} · ${o.date}` }));
+  appointments.slice(0, 2).forEach(a => activities.push({ title:`${a.mode} with ${a.doctor}`, meta:`${a.date}, ${a.time}` }));
+  const wrap = document.getElementById('recent-activity');
+  if(!activities.length){
+    wrap.innerHTML = `<div class="empty-illustration small">${EMPTY_ART}<span>No activity yet.</span></div>`;
+  } else {
+    wrap.innerHTML = activities.map(a =>
+      `<div style="padding:10px 0; border-bottom:1px dashed var(--line-strong);">
+        <div style="font-weight:600; font-size:13px; color:var(--ink);">${a.title}</div>
+        <div style="font-size:11.5px; color:var(--ink-soft); margin-top:2px;">${a.meta}</div>
+      </div>`
+    ).join('');
+  }
+}
+function saveVitals(){
+  vitals = {
+    bp: document.getElementById('i-bp').value.trim() || vitals.bp,
+    sugar: document.getElementById('i-sugar').value.trim() || vitals.sugar,
+    hr: document.getElementById('i-hr').value.trim() || vitals.hr,
+  };
+  document.getElementById('i-bp').value = '';
+  document.getElementById('i-sugar').value = '';
+  document.getElementById('i-hr').value = '';
+  saveState(); renderDashboard();
+  toast('Vitals logged');
+  pushNotif('Vitals updated for today');
+}
+/* ============================================================
+   REMINDERS
+   ============================================================ */
+function addReminder(){
+  const name = document.getElementById('rem-name').value.trim();
+  const time = document.getElementById('rem-time').value;
+  if(!name){ toast('Enter a medicine name'); return; }
+  reminders.push({ id:'r'+Date.now(), name, time, done:false });
+  document.getElementById('rem-name').value = '';
+  saveState(); renderReminders(); renderDashboard();
+  toast('Reminder added');
+  pushNotif(`Reminder set: ${name} at ${time}`);
+}
+function addQuickReminder(){
+  document.getElementById('rem-name').focus();
+}
+function toggleReminder(id){
+  const r = reminders.find(x=>x.id===id);
+  if(!r) return;
+  r.done = !r.done;
+  saveState(); renderReminders(); renderDashboard();
+  if(r.done) toast('Nice — dose logged');
+}
+function removeReminder(id){
+  reminders = reminders.filter(x=>x.id!==id);
+  saveState(); renderReminders(); renderDashboard();
+}
+function renderReminders(){
+  const wrap = document.getElementById('reminders-list');
+  const tag = document.getElementById('rem-count-tag');
+  const pending = reminders.filter(r=>!r.done).length;
+  if(tag) tag.textContent = pending;
+  if(!reminders.length){
+    wrap.innerHTML = `<div class="card"><div class="empty-illustration"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="24" cy="26" r="16"/><path d="M24 20v6l4 3"/><path d="M18 6h12"/></svg><span>No reminders yet. Add your first dose above.</span></div></div>`;
+    return;
+  }
+  const sorted = [...reminders].sort((a,b)=> a.time.localeCompare(b.time));
+  wrap.innerHTML = sorted.map(r=>`
+    <div class="reminder ${r.done?'done':''}">
+      <div class="r-check ${r.done?'checked':''}" onclick="toggleReminder('${r.id}')"></div>
+      <div class="r-body">
+        <div class="r-name">${r.name}</div>
+        <div class="r-time">${r.time}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="removeReminder('${r.id}')">Remove</button>
+    </div>
+  `).join('');
+}
+/* ============================================================
+   MEDIPEDIA
+   ============================================================ */
+function renderMedipedia(){
+  const q = (document.getElementById('medipedia-search').value || '').toLowerCase().trim();
+  const grid = document.getElementById('medipedia-grid');
+  const list = MEDICINES.filter(m =>
+    !q || m.name.toLowerCase().includes(q) || m.salt.toLowerCase().includes(q) ||
+    m.category.toLowerCase().includes(q) || m.generic.toLowerCase().includes(q)
+  );
+  grid.innerHTML = list.map(m => `
+    <div class="card hover med-tag" onclick="openMedDetail('${m.id}')">
+      <span class="pill-label">${categoryIcon(m.category)}${m.category}</span>
+      <div class="name" style="margin-top:8px;">${m.name}</div>
+      <div class="salt">${m.salt}</div>
+      <div class="price">₹${m.price}</div>
+    </div>
+  `).join('') || `<div class="empty-illustration">${EMPTY_ART}<span>No medicines match "${q}".</span></div>`;
+}
+function openMedDetail(id){
+  const m = MEDICINES.find(x=>x.id===id);
+  if(!m) return;
+  const panel = document.getElementById('medipedia-detail');
+  panel.innerHTML = `
+    <div class="card detail-panel">
+      <div class="detail-head">
+        <div>
+          <span class="pill-label">${categoryIcon(m.category)}${m.category}</span>
+          <div class="detail-name" style="margin-top:8px;">${m.name}</div>
+          <div class="detail-company">Manufactured by ${m.company}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:24px; font-weight:700; color:var(--amber-deep); font-family:'Fraunces',serif;">₹${m.price}</div>
+          <div style="font-size:11.5px; color:var(--ink-soft);">MRP, strip of 10</div>
+        </div>
+      </div>
+      <div class="comp-strip">℞ ${m.salt}</div>
+      <p style="font-size:13.5px; color:var(--ink-soft); margin-top:-4px;">${m.description}</p>
+      <div class="detail-grid">
+        <div>
+          <h4>Brand substitutes</h4>
+          ${m.substitutes.map(s=>`
+            <div class="sub-row">
+              <span>${s.name} <span style="color:var(--ink-soft); font-weight:400;">— ${s.company}</span></span>
+              <span class="comp-price">₹${s.price}</span>
+            </div>`).join('')}
+        </div>
+        <div>
+          <h4>Generic substitute</h4>
+          <div class="sub-row">
+            <span>${m.genericAlt.name}</span>
+            <span class="comp-price">₹${m.genericAlt.price}</span>
+          </div>
+          <p style="font-size:12px; color:var(--ink-soft); margin-top:10px;">Generic versions contain the same salt composition at a lower price point.</p>
+          <button class="btn btn-amber btn-sm" style="margin-top:10px;" onclick="addToCart('${m.id}'); showSection('pharmacy');">Order this medicine</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+/* ============================================================
+   PHARMACY
+   ============================================================ */
+function renderPharmacy(){
+  const q = (document.getElementById('pharmacy-search').value || '').toLowerCase().trim();
+  const grid = document.getElementById('pharmacy-grid');
+  const list = MEDICINES.filter(m => !q || m.name.toLowerCase().includes(q) || m.salt.toLowerCase().includes(q));
+  grid.innerHTML = list.map(m => {
+    const qty = cart[m.id] || 0;
+    return `
+    <div class="card hover rx-card">
+      <div>
+        <div class="name">${m.name}</div>
+        <div class="meta">${m.salt}</div>
+      </div>
+      <div class="rx-foot">
+        <span class="rx-price">₹${m.price}</span>
+        ${qty === 0
+          ? `<button class="btn btn-ghost btn-sm" onclick="addToCart('${m.id}')">Add</button>`
+          : `<div class="qty-stepper">
+               <button onclick="changeQty('${m.id}', -1)">−</button>
+               <span class="mono">${qty}</span>
+               <button onclick="changeQty('${m.id}', 1)">+</button>
+             </div>`
+        }
+      </div>
+    </div>`;
+  }).join('') || `<div class="empty-illustration">${EMPTY_ART}<span>No medicines match "${q}".</span></div>`;
+  renderCart(); renderOrderHistory();
+}
+function addToCart(id){
+  cart[id] = (cart[id] || 0) + 1;
+  saveState(); renderPharmacy(); updateCartTag();
+  toast('Added to cart');
+}
+function changeQty(id, delta){
+  cart[id] = (cart[id] || 0) + delta;
+  if(cart[id] <= 0) delete cart[id];
+  saveState(); renderPharmacy(); updateCartTag();
+}
+function updateCartTag(){
+  const count = Object.values(cart).reduce((a,b)=>a+b,0);
+  document.getElementById('cart-count-tag').textContent = count;
+}
+function renderCart(){
+  const wrap = document.getElementById('cart-items');
+  const ids = Object.keys(cart);
+  document.getElementById('cart-empty').style.display = ids.length ? 'none':'flex';
+  document.getElementById('cart-total-row').style.display = ids.length ? 'flex':'none';
+  let total = 0;
+  wrap.innerHTML = ids.map(id=>{
+    const m = MEDICINES.find(x=>x.id===id);
+    const lineTotal = m.price * cart[id];
+    total += lineTotal;
+    return `<div class="cart-item"><span>${m.name} × ${cart[id]}</span><span class="mono">₹${lineTotal}</span></div>`;
+  }).join('');
+  document.getElementById('cart-total-amount').textContent = '₹' + total;
+}
+function placeOrder(){
+  const ids = Object.keys(cart);
+  if(!ids.length){ toast('Your cart is empty'); return; }
+  let total = 0;
+  const items = ids.map(id=>{
+    const m = MEDICINES.find(x=>x.id===id);
+    total += m.price * cart[id];
+    return { name:m.name, qty:cart[id], price:m.price };
+  });
+  const order = { id:'ORD-'+Date.now().toString().slice(-6), date:new Date().toLocaleDateString(), items, total };
+  orders.unshift(order);
+  items.forEach(it=> medHistory.unshift({ name:it.name, note:`Ordered ×${it.qty} via Pharmacy`, date:order.date }) );
+  cart = {};
+  saveState();
+  renderPharmacy(); renderMedHistory(); updateCartTag(); renderDashboard();
+  toast('Order placed — ' + order.id);
+  pushNotif(`Order ${order.id} confirmed`);
+}
+function renderOrderHistory(){
+  const wrap = document.getElementById('order-history');
+  if(!orders.length){ wrap.innerHTML = `<div class="empty-illustration small">${EMPTY_ART}<span>No orders yet.</span></div>`; return; }
+  wrap.innerHTML = orders.slice(0,5).map(o=>`
+    <div style="font-size:12.5px; padding:10px 0; border-bottom:1px dashed var(--line-strong);">
+      <div style="display:flex; justify-content:space-between; font-weight:600;"><span>${o.id}</span><span class="mono">₹${o.total}</span></div>
+      <div style="color:var(--ink-soft);">${o.items.map(i=>i.name+' ×'+i.qty).join(', ')} · ${o.date}</div>
+    </div>
+  `).join('');
+}
+/* ============================================================
+   DOCTOR
+   ============================================================ */
+function renderDoctors(){
+  const grid = document.getElementById('doctor-grid');
+  grid.innerHTML = DOCTORS.map(d=>`
+    <div class="card hover doc-card">
+      <div class="doc-top">
+        <div class="avatar">${d.initial}<span class="spec-badge">${SPEC_ICON[d.spec] || ICON.activity}</span></div>
+        <div>
+          <div class="doc-name">${d.name}</div>
+          <div class="doc-spec">${d.spec}</div>
+        </div>
+      </div>
+      <div class="doc-meta"><span>${d.exp} experience</span><span>★ ${d.rating}</span></div>
+      <div class="doc-meta" style="margin-top:2px;"><span>Consult fee</span><span class="mono">₹${d.fee}</span></div>
+      <div class="doc-actions">
+        <button class="btn btn-ghost btn-sm" onclick="bookAppointment('${d.id}','visit')">Book visit</button>
+        <button class="btn btn-amber btn-sm" onclick="bookAppointment('${d.id}','chat')">Chat / Video</button>
+      </div>
+    </div>
+  `).join('');
+}
+function bookAppointment(id, mode){
+  const d = DOCTORS.find(x=>x.id===id);
+  const slot = new Date(Date.now() + 24*60*60*1000);
+  const appt = {
+    id:'APT-'+Date.now().toString().slice(-6),
+    doctor:d.name, spec:d.spec, fee:d.fee,
+    mode: mode === 'chat' ? 'Chat / Video consult' : 'In-clinic visit',
+    date: slot.toLocaleDateString(),
+    time: mode === 'chat' ? 'Available now' : '10:30 AM'
+  };
+  appointments.unshift(appt);
+  saveState(); renderAppointments(); renderDashboard();
+  toast((mode==='chat' ? 'Consult requested with ' : 'Appointment booked with ') + d.name);
+  pushNotif(`${appt.mode} with ${d.name}`);
+}
+function renderAppointments(){
+  const wrap = document.getElementById('appt-list');
+  if(!appointments.length){
+    wrap.innerHTML = `<div class="empty-illustration"><svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="10" width="34" height="30" rx="4"/><path d="M7 18h34"/><path d="M15 6v8M33 6v8"/></svg><span>No appointments yet. Book one above.</span></div>`;
+    return;
+  }
+  wrap.innerHTML = appointments.map(a=>`
+    <div class="card">
+      <div>
+        <div style="font-weight:600; font-size:14px;">${a.doctor} <span style="color:var(--ink-soft); font-weight:400;">· ${a.spec}</span></div>
+        <div style="font-size:12px; color:var(--ink-soft); margin-top:2px;">${a.mode} · ${a.date}, ${a.time}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-weight:600;">₹${a.fee}</div>
+        <button class="btn btn-ghost btn-sm" style="margin-top:6px;" onclick="cancelAppt('${a.id}')">Cancel</button>
+      </div>
+    </div>
+  `).join('');
+}
+function cancelAppt(id){
+  appointments = appointments.filter(a=>a.id!==id);
+  saveState(); renderAppointments(); renderDashboard();
+  toast('Appointment cancelled');
+}
+/* ============================================================
+   HEALTH RECORD
+   ============================================================ */
+function saveProfile(){
+  profile = {
+    name: document.getElementById('hp-name').value.trim(),
+    age: document.getElementById('hp-age').value.trim(),
+    blood: document.getElementById('hp-blood').value,
+    weight: document.getElementById('hp-weight').value.trim(),
+  };
+  saveState(); renderProfileView(); renderDashboard();
+  toast('Profile saved');
+}
+function renderProfileView(){
+  document.getElementById('hp-name').value = profile.name || '';
+  document.getElementById('hp-age').value = profile.age || '';
+  document.getElementById('hp-blood').value = profile.blood || '';
+  document.getElementById('hp-weight').value = profile.weight || '';
+  const view = document.getElementById('profile-saved-view');
+  view.innerHTML = profile.name
+    ? `<span class="pill-label">Saved</span> <span style="font-size:12.5px; color:var(--ink-soft); margin-left:6px;">${profile.name}, ${profile.age||'—'} yrs, ${profile.blood||'blood group —'}</span>`
+    : '';
+}
+function addAllergy(){
+  const input = document.getElementById('hp-allergy-input');
+  const val = input.value.trim();
+  if(!val) return;
+  allergies.push(val); input.value = '';
+  saveState(); renderChips();
+}
+function removeAllergy(i){ allergies.splice(i,1); saveState(); renderChips(); }
+function addCondition(){
+  const input = document.getElementById('hp-condition-input');
+  const val = input.value.trim();
+  if(!val) return;
+  conditions.push(val); input.value = '';
+  saveState(); renderChips();
+}
+function removeCondition(i){ conditions.splice(i,1); saveState(); renderChips(); }
+function renderChips(){
+  const aWrap = document.getElementById('allergy-chips');
+  aWrap.innerHTML = allergies.length
+    ? allergies.map((a,i)=>`<span class="chip">${a} <button onclick="removeAllergy(${i})">×</button></span>`).join('')
+    : `<span style="font-size:12.5px; color:var(--ink-soft);">No allergies recorded.</span>`;
+  const cWrap = document.getElementById('condition-chips');
+  cWrap.innerHTML = conditions.length
+    ? conditions.map((c,i)=>`<span class="chip neutral">${c} <button onclick="removeCondition(${i})">×</button></span>`).join('')
+    : `<span style="font-size:12.5px; color:var(--ink-soft);">No conditions recorded.</span>`;
+}
+function addMedRecord(){
+  const name = document.getElementById('hp-med-name').value.trim();
+  const note = document.getElementById('hp-med-note').value.trim();
+  if(!name) return;
+  medHistory.unshift({ name, note: note || '—', date: new Date().toLocaleDateString() });
+  document.getElementById('hp-med-name').value = '';
+  document.getElementById('hp-med-note').value = '';
+  saveState(); renderMedHistory(); renderDashboard();
+}
+function renderMedHistory(){
+  const wrap = document.getElementById('med-history-list');
+  if(!medHistory.length){ wrap.innerHTML = `<div class="empty-illustration small">${ICON.pill}<span>No medicine history yet.</span></div>`; return; }
+  wrap.innerHTML = medHistory.map(m=>`
+    <div class="med-history-row">
+      <span><strong>${m.name}</strong> <span style="color:var(--ink-soft);">— ${m.note}</span></span>
+      <span class="mono" style="color:var(--ink-soft);">${m.date}</span>
+    </div>
+  `).join('');
+}
+function renderAll(){
+  renderMedipedia();
+  renderPharmacy();
+  renderDoctors();
+  renderAppointments();
+  renderProfileView();
+  renderChips();
+  renderMedHistory();
+  renderReminders();
+  renderNotif();
+  renderDashboard();
+  updateCartTag();
+}
+loadState();
+</script>
+</body>
+</html>
