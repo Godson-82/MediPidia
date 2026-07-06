@@ -213,8 +213,8 @@ This project is licensed under the MIT License.
 
 **Suryandu Ganguly**
 
-- GitHub: https://github.com/yourusername
-- LinkedIn: https://linkedin.com/in/yourusername
+- GitHub: https://github.com/suryandugy-glitch
+- LinkedIn: https://www.linkedin.com/in/suryandu-ganguly01/
 
 ---
 
