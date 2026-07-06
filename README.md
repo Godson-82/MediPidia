@@ -240,7 +240,6 @@ https://www.linkedin.com/in/suryandu-ganguly01/
 
 https://github.com/suryandugy-glitch
 
-# 👨‍💻 Author
 
 ## **Utsab Chowdhury**
 
