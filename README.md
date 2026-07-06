@@ -8,25 +8,17 @@ A modern **Healthcare Management Web Application** that simplifies medicine mana
 
 <br>
 
-![HTML5](https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white)
-![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES6-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
-![Responsive](https://img.shields.io/badge/Responsive-100%25-success?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Completed-brightgreen?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
-
 <br>
 
-<a href="[https://suryandugy-glitch.github.io/MediPidia/">
-<img src="https://img.shields.io/badge/🌐%20Live%20Demo-Visit%20Now-0A66C2?style=for-the-badge">
+<a href="https://suryandugy-glitch.github.io/MediPidia/" target="_blank">
+  <img src="https://img.shields.io/badge/🌐%20Live%20Demo-Visit%20Now-0A66C2?style=for-the-badge" alt="Live Demo">
 </a>
 
-<a href="https://github.com/suryandugy-glitch/MEDIPIDIA">
-<img src="https://img.shields.io/badge/⭐%20Star%20Repository-black?style=for-the-badge">
+<a href="https://github.com/suryandugy-glitch/MediPidia" target="_blank">
+  <img src="https://img.shields.io/badge/⭐%20Star%20Repository-black?style=for-the-badge" alt="Star Repository">
 </a>
 
 </div>
-
 ---
 
 # 📸 Preview
